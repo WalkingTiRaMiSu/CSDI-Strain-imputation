@@ -1,60 +1,32 @@
-# CSDI
-This is the github repository for the NeurIPS 2021 paper "[CSDI: Conditional Score-based Diffusion Models for Probabilistic Time Series Imputation](https://arxiv.org/abs/2107.03502)".
+# CSDI Strain Imputation
 
-## Requirement
+This project applies the CSDI (Conditional Score-based Diffusion Model)  
+to reconstruct missing structural strain data from sensor measurements.
 
-Please install the packages in requirements.txt
+---
 
-## Preparation
-### Download the healthcare dataset 
-```shell
-python download.py physio
-```
-### Download the air quality dataset 
-```shell
-python download.py pm25
-```
+## Project Overview
 
-### Download the elecricity dataset 
-Please put files in [GoogleDrive](https://drive.google.com/drive/folders/1krZQofLdeQrzunuKkLXy8L_kMzQrVFI_?usp=drive_link) to the "data" folder.
+- Dataset: Structural Health Monitoring (SHM) data
+- Selected channels: strain-related channels (17–21)
+- Data preprocessing:
+  - Reduced data length to 1–10000
+  - Artificial missing segment: 4000–7000
 
-## Experiments 
+The model reconstructs missing values based on temporal patterns learned from the data.
 
-### training and imputation for the healthcare dataset
-```shell
-python exe_physio.py --testmissingratio [missing ratio] --nsample [number of samples]
-```
+---
 
-### imputation for the healthcare dataset with pretrained model
-```shell
-python exe_physio.py --modelfolder pretrained --testmissingratio [missing ratio] --nsample [number of samples]
-```
+## How to Run
 
-### training and imputation for the healthcare dataset
-```shell
-python exe_pm25.py --nsample [number of samples]
-```
+### 1. Open Anaconda Prompt
 
-### training and forecasting for the electricity dataset
-```shell
-python exe_forecasting.py --datatype electricity --nsample [number of samples]
-```
-
-### Visualize results
-'visualize_examples.ipynb' is a notebook for visualizing results.
-
-## Acknowledgements
-
-A part of the codes is based on [BRITS](https://github.com/caow13/BRITS) and [DiffWave](https://github.com/lmnt-com/diffwave)
-
-## Citation
-If you use this code for your research, please cite our paper:
-
-```
-@inproceedings{tashiro2021csdi,
-  title={CSDI: Conditional Score-based Diffusion Models for Probabilistic Time Series Imputation},
-  author={Tashiro, Yusuke and Song, Jiaming and Song, Yang and Ermon, Stefano},
-  booktitle={Advances in Neural Information Processing Systems},
-  year={2021}
-}
-```
+### 2. Move to project folder
+```bash
+cd C:\Users\YOUR_USERNAME\Desktop\CSDI-Strain-imputation
+3. Install required packages
+pip install numpy pandas torch pyyaml matplotlib tqdm scikit-learn
+4. Run the model
+python exe_custom.py --device cuda --nsample 5
+If GPU is not available
+python exe_custom.py --device cpu --nsample 5
