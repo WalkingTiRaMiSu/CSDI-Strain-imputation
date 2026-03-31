@@ -1,26 +1,23 @@
-
-#type: args
-
 train:
-  epochs: 200
-  batch_size: 16 
-  lr: 1.0e-3
-  itr_per_epoch: 1.0e+8
-
+  epochs: 300
+  batch_size: 1
+  lr: 0.0005
+  itr_per_epoch: 100000000.0
 
 diffusion:
-  layers: 4 
-  channels: 64 
+  layers: 4
+  channels: 64
   nheads: 8
   diffusion_embedding_dim: 128
   beta_start: 0.0001
   beta_end: 0.5
   num_steps: 50
-  schedule: "quad"
-  is_linear: False
+  schedule: quad
+  is_linear: false
 
 model:
-  is_unconditional: 0
+  is_unconditional: false
   timeemb: 128
   featureemb: 16
-  target_strategy: "random"
+  target_strategy: random
+  test_missing_ratio: 0.0
