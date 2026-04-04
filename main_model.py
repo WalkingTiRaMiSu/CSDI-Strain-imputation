@@ -415,7 +415,3 @@ class CSDI_Forecasting(CSDI_base):
             samples = self.impute(observed_data, cond_mask, side_info, n_samples)
 
         return samples, observed_data, target_mask, observed_mask, observed_tp
-
-class CSDI_Custom(CSDI_Physio):
-    def __init__(self, config, device, target_dim=1):
-        super(CSDI_Custom, self).__init__(config, device, target_dim=target_dim)
