@@ -1,0 +1,91 @@
+# base_strain_global.yaml
+# Global STr block missing 전용 설정
+# 기존 main_model.py / diff_models.py의 CSDI diffusion 구조는 바꾸지 않는다.
+
+train:
+  epochs: 700
+  batch_size: 16
+  lr: 1.0e-3
+  itr_per_epoch: 1.0e+8
+  valid_epoch_interval: 20
+  gradient_clip: 1.0
+
+# CSDI diffusion backbone 설정
+# 시간이 너무 길면 num_steps를 50으로 낮출 수 있지만, 최종 실험은 100 권장
+diffusion:
+  layers: 4
+  channels: 64
+  nheads: 8
+  diffusion_embedding_dim: 128
+  beta_start: 0.0001
+  beta_end: 0.5
+  num_steps: 100
+  schedule: "quad"
+  is_linear: False
+
+model:
+  is_unconditional: 0
+  timeemb: 128
+  featureemb: 16
+  target_strategy: "global"
+
+data:
+  mat_path: "resp_total_re_05.mat"
+
+  train_events: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+  test_events: [19, 20]
+
+  # 입력 feature: True면 [XTa, dXTa, ddXTa, STr]
+  # False면 [XTa, STr]
+  use_derivatives: True
+
+  # Active interval: XTa absolute peak 기준으로 event마다 자동 결정
+  # L = round_up(active_ratio * N, active_round_to), 단 active_min <= L <= active_max
+  active_ratio: 0.30
+  active_min: 1500
+  active_max: 3000
+  active_round_to: 500
+
+  # active interval 안에서 XTa peak 앞/뒤 비율
+  # start = peak - active_left_fraction * L, end = start + L
+  # 경계 밖으로 나가면 자동 보정
+  active_left_fraction: 0.40
+
+  # Global masking에서는 context 확보를 위해 1000 window 권장
+  # 2의 제곱수 대신 500/1000/250 계열 유지
+  window_size: 1000
+  stride: 250
+
+  # STr global missing block 길이
+  # length = active interval 길이의 5/10/15%, 단 missing_min/max 및 missing_round_to 적용
+  missing_ratios: [0.05, 0.10, 0.15]
+  missing_min: 100
+  missing_max: 500
+  missing_round_to: 50
+
+  # 학습 시나리오: 같은 scenario 안에서는 STr 결측 구간이 절대 시간축 기준으로 고정됨
+  train_missing_positions:
+    - peak_before
+    - peak_center
+    - peak_after
+    - active_left
+    - active_middle
+    - active_right
+
+  # train은 같은 position에 대해 약간의 jitter를 추가해 시나리오 다양화
+  # 1이면 jitter 없는 deterministic scenario만 사용
+  # 2이면 deterministic + random shifted scenario 1개 사용
+  train_jitter_repeats: 2
+  train_jitter_fraction_of_missing: 0.25
+
+  # test는 결과 비교를 위해 deterministic global scenario만 사용
+  test_missing_positions:
+    - peak_before
+    - peak_center
+    - peak_after
+  test_missing_ratios: [0.05, 0.10, 0.15]
+
+  # global block과 window가 겹쳐서 STr target이 1 point 이상 있는 window만 학습/평가에 사용
+  min_target_points: 1
+
+  valid_ratio: 0.2
