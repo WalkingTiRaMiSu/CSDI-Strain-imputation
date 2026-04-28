@@ -1,0 +1,84 @@
+run_name: accg_daccg_ddaccg_xta_dxta_ddxta_str_test_peakcenter15
+
+data:
+  mat_path: resp_total_re_05.mat
+  train_events: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+  test_events: [19, 20]
+
+  # 입력 feature 조합. include_time_feature=True라서 실제 feature_names에는 time_norm이 STr 앞에 추가됨.
+  feature_set: [acc_g, dacc_g, ddacc_g, XTa, dXTa, ddXTa, STr]
+  include_time_feature: true
+
+  # XTa abs peak 기준 active interval 설정
+  active_ratio: 0.30
+  active_min: 1000
+  active_max: 3000
+  active_round_to: 500
+  active_left_fraction: 0.40
+
+  # Sliding window. 단위는 sample point 개수.
+  window_size: 1000
+  stride: 250
+  valid_ratio: 0.20
+
+  # 결측 비율은 active interval 대비 비율.
+  missing_ratios: [0.05, 0.10, 0.15]
+  missing_min: 100
+  missing_max: 500
+  missing_round_to: 50
+  min_target_points: 1
+
+  # 학습 결측 시나리오: 기존 peak 근처 연속결측 + 점식 random + 두 블록 결측 + peak에서 먼 결측.
+  train_jitter_repeats: 2
+  train_jitter_fraction_of_missing: 0.30
+  double_block_min_gap: 100
+  train_missing_scenarios:
+    - {mode: single_block, position: peak_before}
+    - {mode: single_block, position: peak_center}
+    - {mode: single_block, position: peak_after}
+    - {mode: single_block, position: far_before}
+    - {mode: single_block, position: far_after}
+    - {mode: single_block, position: active_left}
+    - {mode: single_block, position: active_middle}
+    - {mode: single_block, position: active_right}
+    - {mode: double_block, position: double_around_peak}
+    - {mode: double_block, position: double_far}
+    - {mode: double_block, position: double_random}
+    - {mode: random_point, position: random_point}
+
+  # 테스트는 발표용으로 XTa peak 근처 연속 결측을 중심으로 평가.
+  test_missing_ratios: [0.15]
+  test_missing_scenarios:
+    - {mode: single_block, position: peak_center}
+
+model:
+  is_unconditional: false
+  timeemb: 128
+  featureemb: 16
+  target_strategy: random
+
+diffusion:
+  layers: 4
+  channels: 64
+  nheads: 8
+  diffusion_embedding_dim: 128
+  beta_start: 0.0001
+  beta_end: 0.5
+  num_steps: 100
+  schedule: quad
+
+train:
+  epochs: 50
+  batch_size: 16
+  lr: 0.001
+  weight_decay: 0.000001
+  valid_epoch_interval: 10
+  gradient_clip: 1.0
+
+eval:
+  nsample: 50
+  plot_all_test_scenarios: true
+  focus_plot_modes: [single_block]
+  focus_plot_positions: [peak_center]
+  focus_plot_ratios: [0.15]
+  save_reconstruction_csv: true
