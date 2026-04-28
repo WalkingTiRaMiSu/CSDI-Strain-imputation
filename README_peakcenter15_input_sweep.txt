@@ -1,42 +1,63 @@
-CSDI STr reconstruction - multi-scenario training + fixed peak-center 15% test
+CSDI STr 복원 - multi-scenario input sweep 버전
 
-핵심 의도
-- 학습: 1~18번 지진 데이터에 대해 다양한 결측 시나리오를 모두 섞어서 학습한다.
-  * peak 근처 연속결측: peak_before / peak_center / peak_after
-  * peak에서 먼 연속결측: far_before / far_after
-  * active interval 내부 위치별 연속결측: active_left / active_middle / active_right
-  * 두 덩어리 연속결측: double_around_peak / double_far / double_random
-  * 점식 랜덤결측: random_point
-  * 결측 비율: active interval 기준 5%, 10%, 15%
-  * jitter repeat 적용으로 데이터셋 수를 늘림
+1) 기존 baseline/global mask 코드는 덮어쓰지 않습니다.
+   이 폴더 안의 새 파일명은 모두 *_multiscenario.py, base_input_*.yaml 형식입니다.
 
-- 테스트/최종 추론: 19~20번 지진 데이터에 대해 peak_center 15% 연속결측만 고정으로 평가한다.
-  * test_missing_ratios: [0.15]
-  * test_missing_scenarios: single_block / peak_center
-  * 발표에서는 "학습은 다양한 결측 상황에 대응하도록 구성했고, 최종 추론 평가는 피크 중심 15% 연속결측에 대해 수행했다"고 설명하면 됨.
+2) 실행 전 확인
+   - resp_total_re_05.mat 파일이 현재 작업 폴더에 있어야 합니다.
+   - 기존 CSDI 파일 main_model.py, diff_models.py가 같은 폴더에 있어야 합니다.
+   - 이 zip 안의 파일들을 기존 폴더에 복사해도 기존 exe_strain_global.py 등은 건드리지 않습니다.
 
-입력 시나리오 3개
-1) base_input_accg_daccg_xta_dxta_str.yaml
-   feature_set: acc_g, dacc_g, XTa, dXTa, STr + time_norm
+3) 데이터 구성
+   - 훈련: EQ 1~18
+   - 테스트: EQ 19~20
+   - target: STr
+   - 결측은 STr에만 적용합니다.
+   - acc_g / XTa / 미분항 / time_norm은 조건 입력으로 관측된 상태입니다.
+   - scaling은 train event의 XTa peak 기준 active interval에서만 mean/std를 계산하는 feature별 z-score입니다.
 
-2) base_input_accg_daccg_xta_str.yaml
-   feature_set: acc_g, dacc_g, XTa, STr + time_norm
+4) 학습 결측 시나리오
+   - peak 근처 연속 block: peak_before, peak_center, peak_after
+   - peak에서 먼 연속 block: far_before, far_after
+   - active interval 내부 위치별 block: active_left, active_middle, active_right
+   - 두 번으로 나누어진 block: double_around_peak, double_far, double_random
+   - 점식 random missing: random_point
+   - missing ratio: active interval 대비 5%, 10%, 15%
+   - jitter repeat: 2회
+   - 전체 input-output pair 수는 실행 시 [INFO] samples train/valid/test에 표시됩니다. 목표는 약 4000개 이상입니다.
 
-3) base_input_accg_daccg_ddaccg_xta_dxta_ddxta_str.yaml
-   feature_set: acc_g, dacc_g, ddacc_g, XTa, dXTa, ddXTa, STr + time_norm
+5) 입력 feature 조합
+   A. base_input_accg_daccg_xta_dxta_str.yaml
+      acc_g, dacc_g, XTa, dXTa, time_norm, STr
 
-실행 예시
-python exe_strain_multiscenario.py --config base_input_accg_daccg_xta_dxta_str.yaml --device cuda:0 --epochs 50 --nsample 50
-python exe_strain_multiscenario.py --config base_input_accg_daccg_xta_str.yaml --device cuda:0 --epochs 50 --nsample 50
-python exe_strain_multiscenario.py --config base_input_accg_daccg_ddaccg_xta_dxta_ddxta_str.yaml --device cuda:0 --epochs 50 --nsample 50
+   B. base_input_accg_daccg_xta_str.yaml
+      acc_g, dacc_g, XTa, time_norm, STr
 
-먼저 데이터셋 개수만 확인
-python exe_strain_multiscenario.py --config base_input_accg_daccg_xta_dxta_str.yaml --device cuda:0 --dryrun_dataset
+   C. base_input_accg_daccg_ddaccg_xta_dxta_ddxta_str.yaml
+      acc_g, dacc_g, ddacc_g, XTa, dXTa, ddXTa, time_norm, STr
 
-결과 저장
-save/strain_multi_<run_name>_<timestamp>/
+   include_time_feature: true이므로 time_norm은 STr 앞에 자동 추가됩니다.
+   CSDI 자체 time embedding도 window sample index를 통해 그대로 사용됩니다.
 
-주의
-- STr의 결측 구간 정답은 모델 입력에 들어가지 않음.
-- 정답 STr은 학습 loss 계산 및 테스트 후 metric/plot 비교에만 사용됨.
-- CSDI 모델 구조는 유지하고, 입력 feature와 masking scenario/data 구성만 바꾼 버전임.
+6) 빠른 데이터셋 개수 확인
+   python exe_strain_multiscenario.py --config base_input_accg_daccg_xta_dxta_str.yaml --device cuda:0 --dryrun_dataset
+
+7) 한 개 조합 실행
+   python exe_strain_multiscenario.py --config base_input_accg_daccg_xta_dxta_str.yaml --device cuda:0 --epochs 50 --nsample 50
+
+8) 세 개 조합 순차 실행
+   run_three_input_scenarios.bat 더블클릭 또는 프롬프트에서 실행
+
+9) 결과 저장 위치
+   save/strain_multi_<run_name>_<timestamp>/
+   - loss_curve.png
+   - loss_history.csv
+   - dataset_info.json
+   - dataset_summary.json
+   - train_scenarios.csv / valid_scenarios.csv / test_scenarios.csv
+   - reconstruction_metrics_multiscenario.csv
+   - plots_reconstruction_multiscenario/
+
+10) 그림 출력
+   기본값은 그림이 너무 많이 생기지 않도록 EQ19/EQ20의 peak_center, ratio=0.10만 그림으로 저장합니다.
+   모든 테스트 시나리오 그림이 필요하면 yaml에서 eval.plot_all_test_scenarios: true 로 바꾸면 됩니다.

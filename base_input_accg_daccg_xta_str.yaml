@@ -1,4 +1,4 @@
-run_name: accg_daccg_xta_str_test_peakcenter15
+run_name: accg_daccg_xta_dxta_str_test_peakcenter15
 
 data:
   mat_path: resp_total_re_05.mat
@@ -6,7 +6,7 @@ data:
   test_events: [19, 20]
 
   # 입력 feature 조합. include_time_feature=True라서 실제 feature_names에는 time_norm이 STr 앞에 추가됨.
-  feature_set: [acc_g, dacc_g, XTa, STr]
+  feature_set: [acc_g, dacc_g, XTa, dXTa, STr]
   include_time_feature: true
 
   # XTa abs peak 기준 active interval 설정
@@ -66,6 +66,7 @@ diffusion:
   beta_end: 0.5
   num_steps: 100
   schedule: quad
+  is_linear: false
 
 train:
   epochs: 50
